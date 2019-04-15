@@ -19,8 +19,12 @@
   "homepage": "https://github.com/hanbanana/DeliveryGate#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
+    "connect-mongo": "^2.0.3",
     "express": "^4.16.4",
     "express-handlebars": "^3.0.2",
-    "mysql": "^2.16.0"
+    "express-session": "^1.16.1",
+    "mongoose": "^5.5.1",
+    "mysql": "^2.16.0",
+    "path": "^0.12.7"
   }
 }

@@ -1,7 +1,14 @@
 var express = require("express");
 var bodyParser = require("body-parser");
+var session = require('express-session');
+var path = require('path');
 
 var app = express();
+app.use(session({
+	secret: 'secret',
+	resave: true,
+	saveUninitialized: true
+}));
 
 // Set the port of our application
 // process.env.PORT lets the port be set by Heroku
@@ -20,10 +27,10 @@ app.set("view engine", "handlebars");
 var mysql = require("mysql");
 
 var connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "hrx_delivery_db"
+	host     : 'localhost',
+	user     : 'root',
+	password : 'root',
+	database : 'loginnode'
 });
 
 connection.connect(function (err) {
@@ -35,14 +42,87 @@ connection.connect(function (err) {
   console.log("connected as id " + connection.threadId);
 });
 
+app.get('/', function(request, response) {
+	response.sendFile(path.join(__dirname + '/views/login.html'));
+});
+app.get('/logout', function(req, res, next) {
+	if (req.session) {
+	  // delete session object
+	  req.session.destroy(function(err) {
+		if(err) {
+		  return next(err);
+		} else {
+		  return res.redirect('/');
+		}
+	  });
+	}
+  });
+
+app.post('/auth', function(request, response) {
+	var username = request.body.username;
+	var password = request.body.password;
+	if (username === 'user1' && password === 'user1') {
+		connection.query('SELECT * FROM accounts WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {
+			if (results.length > 0) {
+				request.session.loggedin = true;
+				request.session.username = username;
+				response.redirect('/customer');
+			} else {
+				response.send('Incorrect Username and/or Password!');
+			}			
+			response.end();
+		});
+		
+	} 
+
+	else if (username === 'admin1' && password === 'admin1') {
+		connection.query('SELECT * FROM accounts WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {
+			if (results.length > 0) {
+				request.session.loggedin = true;
+				request.session.username = username;
+				response.redirect('/deliveryorder');
+			} else {
+				response.send('Incorrect Username and/or Password!');
+			}			
+			response.end();
+		});
+		
+	}
+
+	else {
+		response.send('Please enter Username and Password!');
+		response.end();
+	}
+});
+
+app.get('/home', function(request, response) {
+	if (request.session.loggedin) {
+		response.send('Welcome back, ' + request.session.username + '!');
+	} else {
+		response.send('Please login to view this page!');
+	}
+	response.end();
+});
+
+app.get('/admin', function(request, response) {
+	if (request.session.loggedin) {
+		response.send('Welcome back, ' + request.session.username + '!');
+	} else {
+		response.send('Please login to view this page!');
+	}
+	response.end();
+});
+
 // Use Handlebars to render the main index.html page with the todos in it.
-app.get("/", function (req, res) {
+app.get("/deliveryorder", function (req, res) {
   connection.query("SELECT * FROM deliveryOrder;", function (err, data) {
     if (err) {
       return res.status(500).end();
     }
-
+   else if (req.session.loggedin) {
     res.render("index", { deliveryOrder: data });
+    }
+    
   });
 });
 
